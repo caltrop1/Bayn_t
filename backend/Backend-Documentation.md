@@ -227,6 +227,30 @@ The existing private_documents disk stores files under applications/{id} with UU
 
 The current schema permits multiple documents of the same type; this endpoint does not replace previous documents.
 
+## Assessment / marks API
+
+Assessment endpoints require a Sanctum bearer token. Teachers may read and manage scores only for classes where they are the assigned teacher. Registrars and super admins may read and correct scores across classes; students may read only their own scores. Students cannot create, update, or delete scores.
+
+### Assessment routes
+
+| Method | Route | Purpose |
+|---|---|---|
+| GET | `/api/assessments` | List scores with `class_id`, `student_id`, `category`, `program_id`, `intake_id`, and `per_page` filters. |
+| POST | `/api/assessments` | Create a score. |
+| GET | `/api/assessments/{assessment}` | View one score. |
+| PUT/PATCH | `/api/assessments/{assessment}` | Correct `raw_score`, `sub_items`, or `category`. Student, class, and grader are immutable. |
+| DELETE | `/api/assessments/{assessment}` | Delete/correct a score when authorized. |
+| GET | `/api/classes/{class}/assessments` | Paginated class grading screen rows. |
+| GET | `/api/students/{student}/assessments` | Student performance summary and scores. |
+
+Create requests require `student_id`, `class_id`, `category` (`practical`, `theory`, or `professional`), and non-negative numeric `raw_score`. `sub_items` is an optional object/array of non-negative numeric values. The student must belong to the submitted class. `graded_by` is always taken from the authenticated user.
+
+There is one score per student, class, and category. Duplicate creates and category changes that collide with an existing score return `409`. Scores are weighted using the matching program-specific `grading_configs` row, falling back to the global row (`program_id = null`); when no configuration exists, `weighted_score` is null. The calculation is `raw_score * weight_percentage / 100`, rounded to two decimal places. `raw_score` remains authoritative; sub-items are stored but are not automatically summed.
+
+Successful resource responses use the normal `{ "data": ... }` Laravel resource envelope. Validation errors return `422`, unauthorized access returns `403`, unauthenticated requests return `401`, duplicate conflicts return `409`, and deletion returns `204`. Assessment create/update/delete operations are recorded in `audit_logs` with actor, action, target, and before/after snapshots.
+
+Typical teacher workflow: call `GET /api/classes`, select an assigned class, call `GET /api/classes/{class}/assessments`, then POST or PATCH each score. Registrar users can use the filters on `GET /api/assessments` and the student performance endpoint for review.
+
 ### List application documents
 
 GET /api/applications/{application}/documents returns 200 with a data array of DocumentResource metadata:
@@ -322,6 +346,39 @@ All user routes require Sanctum and super_admin.
 | DELETE | /api/users/{user} | Delete another user; 204 or 409 for dependencies. |
 
 UserResource excludes password and remember_token. Valid roles are super_admin, registrar, teacher, and student.
+
+## Attendance API
+
+Attendance requires a Sanctum bearer token. Valid statuses are `present`, `absent`, `late`, and `excused`. There is one record per student, class, and date; the existing database unique constraint prevents duplicates.
+
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| GET | `/api/attendance` | Paginated records. Supports `class_id`, `student_id`, `date`, `from`, `to`, `status`, and `per_page`. |
+| POST | `/api/attendance` | Create one record with `student_id`, `class_id`, `date` (`YYYY-MM-DD`), and `status`. `marked_by` is always the authenticated user. |
+| GET | `/api/attendance/{attendance}` | View one authorized record. |
+| PUT/PATCH | `/api/attendance/{attendance}` | Correct `status`; the record's class is checked server-side. |
+| DELETE | `/api/attendance/{attendance}` | Delete an authorized record. |
+| GET | `/api/classes/{class}/attendance` | Class attendance screen for `date`, including every class student and that day's record. |
+| POST | `/api/classes/{class}/attendance` | Bulk upsert. Body: `{ "date": "2026-09-07", "records": [{"student_id": 1, "status": "present"}] }`. All students are validated before the transaction; partial writes are not possible. |
+| GET | `/api/students/{student}/attendance` | Authorized student records with the same date filters. |
+| GET | `/api/students/{student}/attendance/summary` | Counts and percentage; accepts optional `from` and `to`. Present and late count toward the percentage. |
+
+Attendance creates, corrections, and deletions write audit log entries with before/after snapshots. Bulk submissions update existing rows safely and audit each changed row. No attendance notification is generated because the current notification workflow has no attendance event.
+
+## Teacher API
+
+The existing backend represents teacher assignment with `classes.teacher_id`; that relationship is the authorization source for teacher-scoped class, student, attendance, and assessment access. The `program_teacher` relationship is not used to grant access to a class that is assigned to another teacher.
+
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| GET | `/api/auth/me` | Current authenticated user and profile. |
+| GET | `/api/teacher/dashboard` | Assigned class/student counts and recent attendance/assessment activity. |
+| GET | `/api/teacher/classes` | Only the authenticated teacher's classes. |
+| GET | `/api/teacher/students` | Only students in the teacher's classes. Supports `class_id`, `program_id`, `intake_id`, `status`, `search`, and `per_page`. |
+| GET | `/api/teacher/attendance` | Attendance automatically scoped to the authenticated teacher; supports attendance filters. |
+| GET | `/api/teacher/assessments` | Assessments automatically scoped to the authenticated teacher. |
+
+Teacher identity is always derived from the authenticated Sanctum user. Client-supplied `teacher_id` values are never used to establish authorization. Generic class, student, attendance, and assessment resource endpoints also authorize the individual object, preventing IDOR access to another teacher's records.
 
 Admin user creation hashes and persists the password; the password remains hidden from UserResource. A null password in a partial update is ignored.
 

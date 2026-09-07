@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\AssessmentScoreController;
+use App\Http\Controllers\Api\AttendanceController;
 use App\Http\Controllers\Api\ApplicationController;
 use App\Http\Controllers\Api\ClassController;
 use App\Http\Controllers\Api\DocumentController;
@@ -9,6 +11,7 @@ use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\ProgramController;
 use App\Http\Controllers\Api\RegistrarController;
 use App\Http\Controllers\Api\StudentController;
+use App\Http\Controllers\Api\TeacherController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -75,6 +78,24 @@ Route::middleware(['auth:sanctum', 'role:super_admin,registrar,student'])->group
 Route::middleware(['auth:sanctum', 'role:super_admin,registrar,teacher'])
     ->apiResource('classes', ClassController::class);
 
+Route::middleware(['auth:sanctum', 'role:super_admin,registrar,teacher,student'])
+    ->group(function () {
+        Route::get('/students/{student}', [StudentController::class, 'show']);
+        Route::get('/students/{student}/attendance', [AttendanceController::class, 'studentAttendance']);
+        Route::get('/students/{student}/attendance/summary', [AttendanceController::class, 'studentSummary']);
+        Route::get('/classes/{class}/attendance', [AttendanceController::class, 'classAttendance']);
+        Route::post('/classes/{class}/attendance', [AttendanceController::class, 'bulk']);
+    });
+
+Route::middleware(['auth:sanctum', 'role:super_admin,registrar,teacher,student'])
+    ->prefix('attendance')->group(function () {
+        Route::get('/', [AttendanceController::class, 'index']);
+        Route::post('/', [AttendanceController::class, 'store'])->middleware('role:super_admin,registrar,teacher');
+        Route::get('/{attendance}', [AttendanceController::class, 'show']);
+        Route::match(['put', 'patch'], '/{attendance}', [AttendanceController::class, 'update'])->middleware('role:super_admin,registrar,teacher');
+        Route::delete('/{attendance}', [AttendanceController::class, 'destroy'])->middleware('role:super_admin,registrar,teacher');
+    });
+
 Route::middleware(['auth:sanctum', 'role:super_admin'])
     ->apiResource('users', UserController::class);
 
@@ -84,6 +105,21 @@ Route::middleware(['auth:sanctum', 'role:super_admin,registrar,teacher,student']
         Route::post('/', [DocumentController::class, 'store']);
         Route::get('/{document}/temporary-url', [DocumentController::class, 'temporaryUrl']);
     });
+
+Route::middleware(['auth:sanctum', 'role:super_admin,registrar,teacher,student'])
+    ->prefix('assessments')
+    ->group(function () {
+        Route::get('/', [AssessmentScoreController::class, 'index']);
+        Route::post('/', [AssessmentScoreController::class, 'store'])->middleware('role:super_admin,registrar,teacher');
+        Route::get('/{assessment}', [AssessmentScoreController::class, 'show']);
+        Route::match(['put', 'patch'], '/{assessment}', [AssessmentScoreController::class, 'update'])->middleware('role:super_admin,registrar,teacher');
+        Route::delete('/{assessment}', [AssessmentScoreController::class, 'destroy'])->middleware('role:super_admin,registrar,teacher');
+    });
+
+Route::middleware(['auth:sanctum', 'role:super_admin,registrar,teacher,student'])->group(function () {
+    Route::get('/classes/{class}/assessments', [AssessmentScoreController::class, 'classAssessments']);
+    Route::get('/students/{student}/assessments', [AssessmentScoreController::class, 'studentAssessments']);
+});
 
 Route::get('/documents/{document}/download', [DocumentController::class, 'download'])
     ->middleware('signed')
@@ -129,11 +165,11 @@ Route::middleware(['auth:sanctum', 'role:super_admin,registrar'])
 Route::middleware(['auth:sanctum', 'role:super_admin,teacher'])
     ->prefix('teacher')
     ->group(function () {
-        Route::get('/dashboard', function () {
-            return response()->json([
-                'message' => 'Welcome Teacher',
-            ]);
-        });
+        Route::get('/dashboard', [TeacherController::class, 'dashboard']);
+        Route::get('/classes', [TeacherController::class, 'classes']);
+        Route::get('/students', [TeacherController::class, 'students']);
+        Route::get('/attendance', [AttendanceController::class, 'index']);
+        Route::get('/assessments', [AssessmentScoreController::class, 'index']);
     });
 
 // Student

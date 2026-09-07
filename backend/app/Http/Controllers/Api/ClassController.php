@@ -20,6 +20,7 @@ class ClassController extends Controller
 
         $classes = SchoolClass::query()
             ->with(['program', 'intake', 'teacher'])
+            ->when($request->user()->isTeacher(), fn ($query) => $query->where('teacher_id', $request->user()->id))
             ->when($request->input('program_id'), fn ($query, $value) => $query->where('program_id', $value))
             ->when($request->input('intake_id'), fn ($query, $value) => $query->where('intake_id', $value))
             ->when($request->input('teacher_id'), fn ($query, $value) => $query->where('teacher_id', $value))
