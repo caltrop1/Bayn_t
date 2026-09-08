@@ -8,7 +8,6 @@ use App\Http\Requests\StoreAttendanceRequest;
 use App\Http\Requests\UpdateAttendanceRequest;
 use App\Http\Resources\AttendanceRecordResource;
 use App\Models\AttendanceRecord;
-use App\Models\AuditLog;
 use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Services\AttendanceService;
@@ -47,7 +46,7 @@ class AttendanceController extends Controller
             throw $e;
         }
         $record->load(['student.user', 'schoolClass.program', 'markedBy']);
-        $this->audit('attendance.created', null, $record, $request->user()->id);
+        app(\App\Services\AuditLogService::class)->log('attendance.created', $record, null, app(\App\Services\AuditLogService::class)->snapshot($record));
         return (new AttendanceRecordResource($record))->response()->setStatusCode(201);
     }
 
@@ -62,10 +61,11 @@ class AttendanceController extends Controller
     {
         $attendance->load(['student.user', 'schoolClass.program', 'markedBy']);
         Gate::authorize('update', $attendance);
-        $before = $attendance->replicate();
+        $audit = app(\App\Services\AuditLogService::class);
+        $before = $audit->snapshot($attendance);
         $attendance->update(['status' => $request->validated('status'), 'marked_by' => $request->user()->id]);
         $attendance->refresh()->load(['student.user', 'schoolClass.program', 'markedBy']);
-        $this->audit('attendance.updated', $before, $attendance, $request->user()->id);
+        $audit->log('attendance.updated', $attendance, $before, $audit->snapshot($attendance));
         return new AttendanceRecordResource($attendance);
     }
 
@@ -73,10 +73,12 @@ class AttendanceController extends Controller
     {
         $attendance->load(['student.user', 'schoolClass.program', 'markedBy']);
         Gate::authorize('delete', $attendance);
-        $before = $attendance->toArray();
-        $id = $attendance->id;
-        $attendance->delete();
-        AuditLog::create(['actor_id' => $request->user()->id, 'action' => 'attendance.deleted', 'target_type' => AttendanceRecord::class, 'target_id' => $id, 'before_snapshot' => $before]);
+        $audit = app(\App\Services\AuditLogService::class);
+        $before = $audit->snapshot($attendance);
+        \Illuminate\Support\Facades\DB::transaction(function () use ($attendance, $audit, $before) {
+            $attendance->delete();
+            $audit->log('attendance.deleted', $attendance, $before, null);
+        });
         return response()->json(null, 204);
     }
 
@@ -140,8 +142,4 @@ class AttendanceController extends Controller
         ])->validate();
     }
 
-    private function audit(string $action, ?AttendanceRecord $before, AttendanceRecord $after, int $actor): void
-    {
-        AuditLog::create(['actor_id' => $actor, 'action' => $action, 'target_type' => AttendanceRecord::class, 'target_id' => $after->id, 'before_snapshot' => $before?->toArray(), 'after_snapshot' => $after->toArray()]);
-    }
 }

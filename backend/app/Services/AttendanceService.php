@@ -39,14 +39,13 @@ class AttendanceService
 
             foreach ($saved as $record) {
                 $before = $existing->get($record->student_id);
-                \App\Models\AuditLog::create([
-                    'actor_id' => $markerId,
-                    'action' => $before ? 'attendance.updated' : 'attendance.created',
-                    'target_type' => AttendanceRecord::class,
-                    'target_id' => $record->id,
-                    'before_snapshot' => $before?->toArray(),
-                    'after_snapshot' => $record->toArray(),
-                ]);
+                app(AuditLogService::class)->log(
+                    $before ? 'attendance.updated' : 'attendance.created',
+                    $record,
+                    app(AuditLogService::class)->snapshot($before),
+                    app(AuditLogService::class)->snapshot($record),
+                    $markerId,
+                );
             }
 
             return $saved->sortBy(fn (AttendanceRecord $record) => array_search($record->student_id, $studentIds, true))->values()->all();

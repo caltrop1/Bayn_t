@@ -11,15 +11,17 @@ use App\Http\Requests\SubmitApplicationRequest;
 use App\Http\Requests\UpdateApplicationStepRequest;
 use App\Http\Resources\ApplicationResource;
 use App\Models\Application;
-use App\Models\AuditLog;
 use App\Models\Intake;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use App\Services\AuditLogService;
 
 class ApplicationController extends Controller
 {
+    public function __construct(private readonly AuditLogService $auditLog) {}
+
     public function index(Request $request)
     {
         $applications = Application::query()
@@ -124,13 +126,6 @@ class ApplicationController extends Controller
 
     private function audit($request, string $action, Application $application, ?array $before, ?array $after): void
     {
-        AuditLog::create([
-            'actor_id' => $request->user()->id,
-            'action' => $action,
-            'target_type' => Application::class,
-            'target_id' => $application->id,
-            'before_snapshot' => $before,
-            'after_snapshot' => $after,
-        ]);
+        $this->auditLog->log($action, $application, $before, $after, $request->user()->id);
     }
 }

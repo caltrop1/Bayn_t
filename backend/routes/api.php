@@ -13,6 +13,8 @@ use App\Http\Controllers\Api\RegistrarController;
 use App\Http\Controllers\Api\StudentController;
 use App\Http\Controllers\Api\TeacherController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\GradingConfigController;
+use App\Http\Controllers\Api\AuditLogController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -105,6 +107,12 @@ Route::middleware(['auth:sanctum', 'role:super_admin,registrar,teacher,student']
         Route::post('/', [DocumentController::class, 'store']);
         Route::get('/{document}/temporary-url', [DocumentController::class, 'temporaryUrl']);
     });
+
+Route::middleware(['auth:sanctum', 'role:super_admin,registrar'])->group(function () {
+    Route::apiResource('grading-configs', GradingConfigController::class);
+    Route::get('/audit-logs', [AuditLogController::class, 'index']);
+    Route::get('/audit-logs/{auditLog}', [AuditLogController::class, 'show']);
+});
 
 Route::middleware(['auth:sanctum', 'role:super_admin,registrar,teacher,student'])
     ->prefix('assessments')

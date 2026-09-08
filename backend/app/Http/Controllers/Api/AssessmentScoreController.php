@@ -7,7 +7,6 @@ use App\Http\Requests\StoreAssessmentScoreRequest;
 use App\Http\Requests\UpdateAssessmentScoreRequest;
 use App\Http\Resources\AssessmentScoreResource;
 use App\Models\AssessmentScore;
-use App\Models\AuditLog;
 use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Services\AssessmentService;
@@ -61,8 +60,6 @@ class AssessmentScoreController extends Controller
             throw $exception;
         }
 
-        $this->audit('assessment.created', $score, null, $score);
-
         return (new AssessmentScoreResource($score))->response()->setStatusCode(201);
     }
 
@@ -77,8 +74,6 @@ class AssessmentScoreController extends Controller
     public function update(UpdateAssessmentScoreRequest $request, AssessmentScore $assessment): AssessmentScoreResource|JsonResponse
     {
         Gate::authorize('update', $assessment);
-        $before = $assessment->load(['student.user', 'schoolClass.program', 'gradedBy'])->replicate();
-
         try {
             $score = $this->assessmentService->update($assessment, $request->validated());
         } catch (QueryException $exception) {
@@ -88,17 +83,19 @@ class AssessmentScoreController extends Controller
             throw $exception;
         }
 
-        $this->audit('assessment.updated', $score, $before, $score);
-
         return new AssessmentScoreResource($score);
     }
 
     public function destroy(AssessmentScore $assessment): JsonResponse
     {
         Gate::authorize('delete', $assessment);
-        $before = $assessment->load(['student.user', 'schoolClass.program', 'gradedBy']);
-        $assessment->delete();
-        $this->audit('assessment.deleted', $before, $before, null);
+        $assessment->load(['student.user', 'schoolClass.program', 'gradedBy']);
+        $audit = app(\App\Services\AuditLogService::class);
+        $before = $audit->snapshot($assessment);
+        \Illuminate\Support\Facades\DB::transaction(function () use ($assessment, $audit, $before) {
+            $assessment->delete();
+            $audit->log('assessment.deleted', $assessment, $before, null);
+        });
 
         return response()->json(null, 204);
     }
@@ -144,15 +141,4 @@ class AssessmentScoreController extends Controller
         ]);
     }
 
-    private function audit(string $action, AssessmentScore $target, ?AssessmentScore $before, ?AssessmentScore $after): void
-    {
-        AuditLog::create([
-            'actor_id' => request()->user()?->id,
-            'action' => $action,
-            'target_type' => AssessmentScore::class,
-            'target_id' => $target->id,
-            'before_snapshot' => $before?->toArray(),
-            'after_snapshot' => $after?->toArray(),
-        ]);
-    }
 }

@@ -18,7 +18,6 @@ use App\Http\Resources\DocumentResource;
 use App\Http\Resources\PaymentResource;
 use App\Http\Resources\StudentResource;
 use App\Models\Application;
-use App\Models\AuditLog;
 use App\Models\Document;
 use App\Models\Payment;
 use App\Models\SchoolClass;
@@ -29,9 +28,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
+use App\Services\AuditLogService;
 
 class RegistrarController extends Controller
 {
+    public function __construct(private readonly AuditLogService $auditLog) {}
+
     public function dashboard(): JsonResponse
     {
         $count = fn (string $status) => Application::query()->where('status', $status)->count();
@@ -260,6 +262,6 @@ class RegistrarController extends Controller
 
     private function audit(Request $request, string $action, $target, ?array $before, array $after): void
     {
-        AuditLog::create(['actor_id' => $request->user()->id, 'action' => $action, 'target_type' => $target::class, 'target_id' => $target->id, 'before_snapshot' => $before, 'after_snapshot' => $after]);
+        $this->auditLog->log($action, $target, $before, $after, $request->user()->id);
     }
 }

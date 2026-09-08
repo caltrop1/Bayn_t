@@ -380,6 +380,31 @@ The existing backend represents teacher assignment with `classes.teacher_id`; th
 
 Teacher identity is always derived from the authenticated Sanctum user. Client-supplied `teacher_id` values are never used to establish authorization. Generic class, student, attendance, and assessment resource endpoints also authorize the individual object, preventing IDOR access to another teacher's records.
 
+## Grading configuration and weighted scores
+
+Grading configuration is managed by registrar and super-admin users only. Teachers and students cannot create, update, or delete configuration rows.
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/api/grading-configs` | Paginated configurations; accepts `program_id` and `per_page` filters. |
+| GET | `/api/grading-configs/{id}` | View one configuration. |
+| POST | `/api/grading-configs` | Create a global (`program_id: null`) or program-specific weight. |
+| PUT/PATCH | `/api/grading-configs/{id}` | Update a weight or category. |
+| DELETE | `/api/grading-configs/{id}` | Delete a configuration. |
+
+Categories are `practical`, `theory`, and `professional`. Weights are numeric percentages from 0 through 100; duplicate program/category rows are rejected and a complete three-category set must total exactly 100%. Program-specific rows take precedence over global rows. Assessment writes resolve that configuration server-side and calculate `weighted_score = raw_score * weight / 100` with deterministic two-decimal rounding. Client-supplied `weighted_score` values are ignored because the field is not accepted by the assessment requests. An assessment cannot be created or updated when no applicable category configuration exists.
+
+## Audit log API
+
+Audit records are append-only and are written by `AuditLogService`. The authenticated user supplies `actor_id`; clients cannot provide or change it. Snapshots redact passwords, tokens, secrets, and similar credentials.
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/api/audit-logs` | Paginated administrative audit history. Supports `actor_id`, `action`, `target_type`, `target_id`, `from`, `to`, and `per_page`. |
+| GET | `/api/audit-logs/{id}` | View one audit record. |
+
+Only registrars and super admins can read audit logs. There are no create, update, or delete audit endpoints. Assessment, grading configuration, and attendance changes are logged with before/after snapshots; writes performed inside transactions log only when the business transaction commits.
+
 Admin user creation hashes and persists the password; the password remains hidden from UserResource. A null password in a partial update is ignored.
 
 ## Registrar API
