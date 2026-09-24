@@ -22,7 +22,7 @@ const CTASection = () => {
           {description}
         </p>
         <Link
-          to="/application"
+          to="/apply"
           className="group relative mt-11 inline-flex items-center gap-3 overflow-hidden rounded-full bg-espresso px-9 py-4 text-sm font-semibold text-cream shadow-[0_16px_40px_-14px_rgba(34,23,18,0.6)] transition-transform duration-300 hover:-translate-y-0.5 active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-espresso focus-visible:ring-offset-2 focus-visible:ring-offset-champagne-light"
         >
           <span

@@ -105,7 +105,7 @@ export const api = {
   request: (config) => client.request(config),
   get: (url, params, config = {}) => client.get(url, { ...config, params }),
   post: (url, data, config) => client.post(url, data, config),
-  patch: (url, data) => client.patch(url, data),
+  patch: (url, data, config) => client.patch(url, data, config),
   put: (url, data) => client.put(url, data),
   delete: (url) => client.delete(url),
 };

@@ -6,14 +6,14 @@ import { useApplication } from '../context/ApplicationContext';
 
 const DocumentsStep = () => {
   const navigate = useNavigate();
-  const { formData, errors, updateField, validateStep, completeStep, uploadDocuments } = useApplication();
+  const { formData, errors, updateField, validateStep, completeStep, uploadDocuments, basePath } = useApplication();
   const [busy, setBusy] = useState(false);
   const [apiError, setApiError] = useState('');
 
   const handleContinue = async () => {
     if (validateStep('documents')) {
       setBusy(true); setApiError('');
-      try { await uploadDocuments(); completeStep('documents'); navigate('/application/review'); }
+      try { await uploadDocuments(); completeStep('documents'); navigate(`${basePath}/review`); }
       catch (error) { setApiError(error.message || 'Your documents could not be uploaded. Please try again.'); }
       finally { setBusy(false); }
     }
@@ -112,7 +112,7 @@ const DocumentsStep = () => {
             )}
             <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center w-full">
               <button
-                onClick={() => navigate('/application/experience')}
+                onClick={() => navigate(`${basePath}/experience`)}
                 className="border border-gray-400 bg-transparent text-[#111111] text-[12px] font-medium uppercase tracking-wider py-3 px-6 sm:px-8 rounded-full hover:bg-gray-50 transition flex items-center justify-center w-full sm:w-auto"
               >
                 <svg className="w-3.5 h-3.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

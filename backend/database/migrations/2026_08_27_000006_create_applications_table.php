@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('applicant_name')->nullable();
             $table->string('applicant_email');
             $table->string('applicant_phone')->nullable();
-            $table->enum('status', ['draft', 'submitted', 'payment_pending', 'paid', 'under_review', 'approved', 'rejected', 'enrolled'])->index();
+            $table->enum('status', ['draft', 'submitted', 'payment_pending', 'paid', 'under_review', 'approved', 'rejected', 'needs_information', 'enrolled'])->index();
             $table->text('rejection_reason')->nullable();
             $table->foreignId('reviewed_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamp('submitted_at')->nullable()->index();

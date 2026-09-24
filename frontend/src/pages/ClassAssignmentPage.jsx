@@ -34,6 +34,9 @@ export default function ClassAssignmentPage() {
   const [selectedClassId, setSelectedClassId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [assigning, setAssigning] = useState(false);
+  const [enrolledStudent, setEnrolledStudent] = useState(null);
+  const [temporaryPassword, setTemporaryPassword] = useState('');
+  const [creatingAccount, setCreatingAccount] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -72,7 +75,11 @@ export default function ClassAssignmentPage() {
     setError('');
     try {
       const student = await registrarService.enroll(id, selectedClass.id);
-      navigate(`/registrar/students/${student.id}`);
+      if (student?.user) {
+        navigate(`/registrar/students/${student.id}`);
+      } else {
+        setEnrolledStudent(student);
+      }
     } catch (err) {
       setError(err.message || 'The student could not be assigned to this class.');
     } finally {
@@ -84,6 +91,54 @@ export default function ClassAssignmentPage() {
 
   if (!application) {
     return <div className="py-20 text-center text-[#6b7280]">{error || 'Application not found.'}</div>;
+  }
+
+  if (enrolledStudent) {
+    const email = application.applicant_email;
+    const createAccount = async () => {
+      setCreatingAccount(true);
+      setError('');
+      try {
+        const created = await registrarService.createStudentAccount(id, temporaryPassword.trim() || undefined);
+        setTemporaryPassword('');
+        navigate(`/registrar/students/${created.id || enrolledStudent.id}`);
+      } catch (err) {
+        setError(err.message || 'The student account could not be created.');
+      } finally {
+        setCreatingAccount(false);
+      }
+    };
+
+    return (
+      <div className="mx-auto max-w-2xl pb-20">
+        <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#a87b52]">Class assigned</p>
+          <h1 className="mt-2 text-3xl font-serif text-[#111827]">Create the student login</h1>
+          <p className="mt-3 text-sm leading-6 text-gray-600">The class assignment is complete. Create the student account using the application email.</p>
+          <div className="mt-6 rounded-xl bg-[#f5f5f3] p-4">
+            <p className="text-xs uppercase tracking-wider text-gray-400">Login email</p>
+            <p className="mt-1 text-sm font-semibold text-gray-900">{email}</p>
+            <p className="mt-3 text-xs text-gray-500">This email is locked to the application and cannot be changed.</p>
+          </div>
+          <label className="mt-6 block text-sm font-medium text-gray-700">
+            Temporary password <span className="font-normal text-gray-400">(optional)</span>
+            <input
+              type="password"
+              minLength={8}
+              value={temporaryPassword}
+              onChange={(event) => setTemporaryPassword(event.target.value)}
+              placeholder="Leave blank to use the configured default"
+              className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-3 text-sm focus:border-[#a87b52] focus:outline-none"
+            />
+          </label>
+          {error && <p role="alert" className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
+          <button onClick={createAccount} disabled={creatingAccount} className="mt-7 w-full rounded-full bg-[#221712] px-5 py-3 text-sm font-semibold text-white hover:bg-[#3b2920] disabled:opacity-60">
+            {creatingAccount ? 'Creating account…' : 'Create student account'}
+          </button>
+          <p className="mt-4 text-center text-xs text-gray-500">The student will be required to change the temporary password on first login.</p>
+        </div>
+      </div>
+    );
   }
 
   return (

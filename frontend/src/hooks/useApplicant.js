@@ -21,10 +21,12 @@ export default function useApplicant(id) {
   }, [id]);
 
   const transition = async (options) => {
-    const updated = await registrarService.review(id, {
-      status: options.backendStatus,
-      rejection_reason: options.reason,
-    });
+    const updated = options.requestInformation
+      ? await registrarService.requestInformation(id, { rejection_reason: options.reason })
+      : await registrarService.review(id, {
+        status: options.backendStatus,
+        rejection_reason: options.reason,
+      });
     const refreshed = await ApplicationModel.fetch(updated.id || id);
     setApplicant(refreshed);
     return refreshed;

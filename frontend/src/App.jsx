@@ -85,9 +85,9 @@ function ProtectedRoute({ step, children }) {
   return children;
 }
 
-function ApplicationStepsLayout() {
+function ApplicationStepsLayout({ guest = false }) {
   return (
-    <ApplicationProvider>
+    <ApplicationProvider guest={guest}>
       <Outlet />
     </ApplicationProvider>
   );
@@ -114,6 +114,19 @@ function App() {
         <Route path="/login" element={<Navigate to="/auth/login" replace />} />
         <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/apply" element={<ApplicationLayout />}>
+          <Route index element={<Application basePath="/apply" />} />
+          <Route element={<ApplicationStepsLayout guest />}>
+            <Route path="program" element={<ProgramSelection />} />
+            <Route path="selected" element={<ProtectedRoute step="selected"><SelectedProgram /></ProtectedRoute>} />
+            <Route path="location" element={<ProtectedRoute step="location"><LocationStep /></ProtectedRoute>} />
+            <Route path="experience" element={<ProtectedRoute step="experience"><ExperienceStep /></ProtectedRoute>} />
+            <Route path="documents" element={<ProtectedRoute step="documents"><DocumentsStep /></ProtectedRoute>} />
+            <Route path="review" element={<ProtectedRoute step="review"><ReviewStep /></ProtectedRoute>} />
+            <Route path="payment" element={<ProtectedRoute step="payment"><PaymentStep /></ProtectedRoute>} />
+            <Route path="confirmation" element={<ProtectedRoute step="confirmation"><ApplicationConfirmation /></ProtectedRoute>} />
+          </Route>
+        </Route>
 
         <Route element={<MainLayout />}>
           <Route path="/" element={<Home />} />

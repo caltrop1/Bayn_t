@@ -22,6 +22,8 @@ use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\StudentController;
 use App\Http\Controllers\Api\TeacherController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\GuestApplicationController;
+use App\Http\Middleware\EnsureGuestApplicationAccess;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -32,6 +34,19 @@ use Illuminate\Support\Facades\Route;
 
 // Payment Gateway Webhook (Public Gateway Callback)
 Route::post('/payments/webhook', [PaymentController::class, 'webhook']);
+
+// Guest applications use a random access token returned at creation time;
+// they do not require a user account or a Sanctum token.
+Route::prefix('guest-applications')->group(function () {
+    Route::post('/', [GuestApplicationController::class, 'store'])->middleware('throttle:public-write');
+    Route::middleware(EnsureGuestApplicationAccess::class)->group(function () {
+        Route::get('/{application}', [GuestApplicationController::class, 'show']);
+        Route::patch('/{application}', [GuestApplicationController::class, 'update']);
+        Route::post('/{application}/documents', [GuestApplicationController::class, 'upload'])->middleware('throttle:public-write');
+        Route::post('/{application}/submit', [GuestApplicationController::class, 'submit']);
+        Route::post('/{application}/defer-payment', [GuestApplicationController::class, 'deferPayment']);
+    });
+});
 
 // --------------------------------------------------------------------------
 // Authentication
@@ -214,8 +229,10 @@ Route::middleware(['auth:sanctum', 'role:super_admin,registrar'])
         Route::get('/applications', [RegistrarController::class, 'applications']);
         Route::get('/applications/{application}', [RegistrarController::class, 'showApplication']);
         Route::patch('/applications/{application}', [RegistrarController::class, 'review']);
+        Route::post('/applications/{application}/request-information', [RegistrarController::class, 'requestInformation']);
         Route::get('/applications/{application}/documents', [RegistrarController::class, 'documents']);
         Route::post('/applications/{application}/enroll', [RegistrarController::class, 'enroll']);
+        Route::post('/applications/{application}/account', [RegistrarController::class, 'createAccount']);
         Route::get('/documents/{document}/temporary-url', [RegistrarController::class, 'documentUrl']);
         Route::get('/payments', [RegistrarController::class, 'payments']);
         Route::get('/payments/{payment}', [RegistrarController::class, 'showPayment']);

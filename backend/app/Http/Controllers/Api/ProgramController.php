@@ -35,7 +35,11 @@ class ProgramController extends Controller
     {
         abort_unless($program->status?->value === 'open', 404);
 
-        return new ProgramResource($program->load(['intakes', 'classes', 'teachers']));
+        return new ProgramResource($program->load([
+            'intakes' => fn ($query) => $query->whereIn('status', [IntakeStatus::Open->value, IntakeStatus::Upcoming->value])->orderBy('start_date'),
+            'classes',
+            'teachers',
+        ]));
     }
 
     public function index(Request $request)

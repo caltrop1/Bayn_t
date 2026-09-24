@@ -89,7 +89,7 @@ const Navbar = () => {
         </ul>
 
         <Link
-          to="/application"
+          to="/apply"
           className="hidden md:block bg-champagne-light text-espresso px-6 py-2 rounded-full text-xs font-semibold uppercase hover:bg-champagne hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 shadow-[0_4px_14px_rgba(201,162,39,0.35)]"
         >
           Apply Now
@@ -121,7 +121,7 @@ const Navbar = () => {
           <Link to="/events" className={mobileLinkClass('/events')} onClick={() => setIsOpen(false)}>events</Link>
           <Link to="/contact" className={mobileLinkClass('/contact')} onClick={() => setIsOpen(false)}>contact</Link>
           <Link
-            to="/application"
+            to="/apply"
             className="bg-champagne-light text-espresso px-6 py-2 rounded-full text-xs font-semibold uppercase w-full text-center hover:bg-champagne active:scale-[0.98] transition-all duration-200 inline-block"
             onClick={() => setIsOpen(false)}
           >

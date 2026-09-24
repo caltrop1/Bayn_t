@@ -16,6 +16,47 @@ export const contentService = {
 export const publicContentService = {
   programs: async (params) => resource(await api.get('/public/programs', params)),
   program: async (id) => resource(await api.get(`/public/programs/${id}`)),
+  intakes: async (programId) => {
+    const program = await publicContentService.program(programId);
+    return program?.intakes?.data || program?.intakes || [];
+  },
+};
+
+const guestRequest = async (method, url, token, data, config = {}) => {
+  if (!token) {
+    throw new Error('Your application session is missing. Please restart the application.');
+  }
+
+  return api.request({
+    ...config,
+    method,
+    url,
+    data,
+    headers: {
+      ...(config.headers || {}),
+      'X-Application-Token': token,
+    },
+  });
+};
+
+export const guestApplicationService = {
+  create: async (payload) => {
+    const response = await api.post('/guest-applications', payload);
+    return {
+      ...resource(response),
+      guest_access_token: response?.data?.guest_access_token,
+    };
+  },
+  show: async (id, token) => resource(await guestRequest('get', `/guest-applications/${id}`, token)),
+  update: async (id, token, payload) => resource(await guestRequest('patch', `/guest-applications/${id}`, token, payload)),
+  upload: async (id, token, type, file) => {
+    const body = new FormData();
+    body.append('type', type);
+    body.append('file', file);
+    return resource(await guestRequest('post', `/guest-applications/${id}/documents`, token, body, { timeout: 120000 }));
+  },
+  submit: async (id, token) => resource(await guestRequest('post', `/guest-applications/${id}/submit`, token, {})),
+  deferPayment: async (id, token) => resource(await guestRequest('post', `/guest-applications/${id}/defer-payment`, token, {})),
 };
 
 export const applicationService = {
@@ -87,11 +128,13 @@ export const registrarService = {
   applications: async (params) => resource(await api.get('/registrar/applications', params)),
   application: async (id) => resource(await api.get(`/registrar/applications/${id}`)),
   review: async (id, payload) => resource(await api.patch(`/registrar/applications/${id}`, payload)),
+  requestInformation: async (id, payload) => resource(await api.post(`/registrar/applications/${id}/request-information`, payload)),
   classes: async (params) => resource(await api.get('/registrar/classes', params)),
   teachers: async () => resource(await api.get('/registrar/teachers')),
   assignTeacher: async (classId, teacherId) => resource(await api.patch(`/classes/${classId}`, { teacher_id: teacherId || null })),
   documentUrl: async (id) => (await api.get(`/registrar/documents/${id}/temporary-url`)).data,
   enroll: async (id, class_id) => resource(await api.post(`/registrar/applications/${id}/enroll`, { class_id })),
+  createStudentAccount: async (id, password) => resource(await api.post(`/registrar/applications/${id}/account`, password ? { password } : {})),
   students: async (params) => resource(await api.get('/registrar/students', params)),
   student: async (id) => resource(await api.get(`/registrar/students/${id}`)),
   updateStudentStatus: async (id, status) => resource(await api.patch(`/registrar/students/${id}/status`, { status })),

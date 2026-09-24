@@ -5,13 +5,13 @@ import { useApplication } from '../context/ApplicationContext';
 
 const SelectedProgram = () => {
   const navigate = useNavigate();
-  const { getSelectedProgram, intakes, formData, errors, updateField, validateStep, completeStep, saveStep } = useApplication();
+  const { getSelectedProgram, intakes, formData, errors, updateField, validateStep, completeStep, saveStep, guest } = useApplication();
   const [busy, setBusy] = useState(false);
   const [apiError, setApiError] = useState('');
   const program = getSelectedProgram();
 
   if (!program) {
-    navigate('/application/program');
+    navigate(`${guest ? '/apply' : '/application'}/program`);
     return null;
   }
 
@@ -81,14 +81,14 @@ const SelectedProgram = () => {
           
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
             <button 
-              onClick={async () => { if (validateStep('selected')) { setBusy(true); setApiError(''); try { await saveStep('selected'); completeStep('selected'); navigate('/application/location'); } catch (error) { setApiError(error.message || 'Your intake could not be saved. Please try again.'); } finally { setBusy(false); } } }}
+              onClick={async () => { if (validateStep('selected')) { setBusy(true); setApiError(''); try { if (!guest) await saveStep('selected'); completeStep('selected'); navigate(`${guest ? '/apply' : '/application'}/location`); } catch (error) { setApiError(error.message || 'Your intake could not be saved. Please try again.'); } finally { setBusy(false); } } }}
               disabled={busy}
               className="bg-[#eec15b] hover:bg-[#d9af50] text-[#111111] text-[12px] font-bold uppercase tracking-wider py-3.5 px-8 rounded-full transition"
             >
               {busy ? 'Saving…' : 'Continue'}
             </button>
             <button 
-              onClick={() => navigate('/application/program')}
+              onClick={() => navigate(`${guest ? '/apply' : '/application'}/program`)}
               className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider hover:text-gray-800 transition underline underline-offset-4 w-full sm:w-auto text-center"
             >
               Change Program

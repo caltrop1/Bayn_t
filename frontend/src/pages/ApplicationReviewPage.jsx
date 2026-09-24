@@ -58,7 +58,7 @@ export default function ApplicationReviewPage() {
   };
 
   const handleRequestInfo = async ({ selected, message }) => {
-    try { setActionError(''); await transition({ backendStatus: 'rejected', reason: `${selected.join(', ') || 'Further details'}: ${message}` }); setIsRequestModalOpen(false); }
+      try { setActionError(''); await transition({ requestInformation: true, reason: `${selected.join(', ') || 'Further details'}: ${message}` }); setIsRequestModalOpen(false); }
     catch (error) { setActionError(error.message || 'The information request could not be sent.'); }
   };
 

@@ -14,7 +14,7 @@ class StudentController extends Controller
     {
         return new StudentResource($request->user()->student?->load([
             'user', 'application.program', 'application.intake', 'schoolClass.program', 'schoolClass.intake', 'schoolClass.teacher',
-            'documents', 'payments',
+            'documents', 'payments', 'attendanceRecords', 'assessmentScores',
         ]) ?? abort(404, 'No student record exists for this account.'));
     }
 

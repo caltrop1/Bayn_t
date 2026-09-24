@@ -55,7 +55,7 @@ export default function PublicProgramDetails() {
               <div className="space-y-2">{intakes.map((intake) => <div key={intake.id} className="bg-white rounded-lg px-4 py-3 text-sm">{intake.name || intake.start_date || 'Upcoming intake'}</div>)}</div>
             </div>
           )}
-          <Link to="/application/program" className="inline-flex mt-8 bg-[#dfbe53] px-6 py-3 text-sm font-bold hover:bg-[#d4b044]">Apply for this program</Link>
+          <Link to="/apply" className="inline-flex mt-8 bg-[#dfbe53] px-6 py-3 text-sm font-bold hover:bg-[#d4b044]">Apply for this program</Link>
         </div>
       </section>
     </main>

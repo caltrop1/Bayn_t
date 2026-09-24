@@ -6,10 +6,12 @@ use App\Enums\ApplicationStatus;
 use App\Enums\DocumentType;
 use App\Enums\PaymentStatus;
 use App\Enums\StudentStatus;
+use App\Enums\UserRole;
 use App\Events\ApplicationReviewed;
 use App\Events\PaymentStatusChanged;
 use App\Events\StudentEnrolled;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CreateApplicantAccountRequest;
 use App\Http\Requests\EnrollApplicationRequest;
 use App\Http\Requests\ReviewApplicationRequest;
 use App\Http\Requests\UpdateStudentStatusRequest;
@@ -30,6 +32,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use App\Services\AuditLogService;
 
@@ -102,6 +105,14 @@ class RegistrarController extends Controller
     {
         Gate::authorize('approve', $application);
         $status = ApplicationStatus::from($request->validated('status'));
+        if ($status === ApplicationStatus::Approved) {
+            $missing = $application->missingRequirements();
+            if ($missing !== []) {
+                throw \Illuminate\Validation\ValidationException::withMessages(
+                    collect($missing)->map(fn (string $message) => [$message])->all()
+                );
+            }
+        }
         $this->validateReviewTransition($application, $status);
         $before = $this->snapshot($application);
 
@@ -113,6 +124,23 @@ class RegistrarController extends Controller
 
         $this->audit($request, 'application_reviewed', $application, $before, $this->snapshot($application));
         event(new ApplicationReviewed($application, $status));
+
+        return new ApplicationResource($application->refresh()->load(['program', 'intake', 'reviewedBy']));
+    }
+
+    public function requestInformation(Request $request, Application $application): ApplicationResource
+    {
+        Gate::authorize('approve', $application);
+        abort_unless(in_array($application->status?->value, ['submitted', 'under_review'], true), 409, 'Information can only be requested from an active review.');
+        $validated = $request->validate(['rejection_reason' => ['required', 'string', 'max:5000']]);
+        $before = $this->snapshot($application);
+        $application->forceFill([
+            'status' => ApplicationStatus::NeedsInformation,
+            'rejection_reason' => $validated['rejection_reason'],
+            'reviewed_by' => $request->user()->id,
+        ])->save();
+        $this->audit($request, 'application_information_requested', $application, $before, $this->snapshot($application));
+        event(new ApplicationReviewed($application, ApplicationStatus::NeedsInformation));
 
         return new ApplicationResource($application->refresh()->load(['program', 'intake', 'reviewedBy']));
     }
@@ -210,6 +238,45 @@ class RegistrarController extends Controller
         return new StudentResource($student->load(['user', 'application', 'schoolClass.program', 'schoolClass.intake']));
     }
 
+    public function createAccount(CreateApplicantAccountRequest $request, Application $application): JsonResponse
+    {
+        Gate::authorize('createAccount', $application);
+
+        $student = DB::transaction(function () use ($request, $application): Student {
+            $lockedApplication = Application::query()->lockForUpdate()->findOrFail($application->id);
+            abort_unless($lockedApplication->status === ApplicationStatus::Enrolled, 409, 'The application must be enrolled in a class before an account can be created.');
+
+            $student = $lockedApplication->student()->lockForUpdate()->first();
+            abort_unless($student, 409, 'Assign the applicant to a class before creating a student account.');
+            abort_if($student->user_id, 409, 'A student account is already linked to this application.');
+
+            $email = strtolower(trim($lockedApplication->applicant_email));
+            $existingUser = User::query()->whereRaw('LOWER(email) = ?', [$email])->first();
+            abort_if($existingUser, 409, 'An account already exists for this email address. No duplicate account was created.');
+
+            $password = $request->validated('password') ?: config('academy.default_temporary_password');
+            $user = User::create([
+                'name' => $lockedApplication->applicant_name,
+                'email' => $email,
+                'password' => Hash::make($password),
+                'role' => UserRole::STUDENT,
+                'phone' => $lockedApplication->applicant_phone,
+                'is_active' => true,
+                'must_change_password' => true,
+            ]);
+
+            $student->update(['user_id' => $user->id]);
+            return $student->refresh();
+        });
+
+        $this->audit($request, 'student_account_created', $student, null, $this->snapshot($student));
+
+        return response()->json([
+            'message' => 'Student account created. The temporary password is not returned by the API.',
+            'data' => new StudentResource($student->load(['user', 'application.program', 'application.intake', 'schoolClass.program', 'schoolClass.intake'])),
+        ], 201);
+    }
+
     public function students(Request $request)
     {
         Gate::authorize('viewAny', Student::class);
@@ -279,6 +346,7 @@ class RegistrarController extends Controller
         $allowed = match ($current) {
             ApplicationStatus::Submitted, ApplicationStatus::Paid => [ApplicationStatus::UnderReview, ApplicationStatus::Approved, ApplicationStatus::Rejected],
             ApplicationStatus::UnderReview => [ApplicationStatus::Approved, ApplicationStatus::Rejected],
+            ApplicationStatus::NeedsInformation => [ApplicationStatus::UnderReview, ApplicationStatus::Approved, ApplicationStatus::Rejected],
             default => [],
         };
         abort_unless(in_array($status, $allowed, true), 409, 'Invalid application status transition.');

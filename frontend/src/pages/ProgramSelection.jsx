@@ -4,14 +4,14 @@ import ProgramCard from '../components/application/ProgramCard';
 import { useApplication } from '../context/ApplicationContext';
 
 const ProgramSelection = () => {
-  const { formData, programs, loading, errors, updateField, validateStep, completeStep, ensureDraft } = useApplication();
+  const { formData, programs, loading, errors, updateField, validateStep, completeStep, ensureDraft, guest } = useApplication();
   const navigate = useNavigate();
   const [busy, setBusy] = React.useState(false);
   const [apiError, setApiError] = React.useState('');
   const handleContinue = async () => {
     if (validateStep('program')) {
       setBusy(true); setApiError('');
-      try { await ensureDraft(); completeStep('program'); navigate('/application/selected'); }
+      try { if (!guest) await ensureDraft(); completeStep('program'); navigate(`${guest ? '/apply' : '/application'}/selected`); }
       catch (error) { setApiError(error.message || 'Your application could not be started. Please try again.'); }
       finally { setBusy(false); }
     }
@@ -53,7 +53,7 @@ const ProgramSelection = () => {
       {/* Footer Navigation */}
       <div className="w-full flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center pb-10">
         <button 
-          onClick={() => navigate('/application')}
+          onClick={() => navigate(guest ? '/apply' : '/application')}
           className="border border-gray-400 bg-transparent text-[#111111] text-[12px] font-medium uppercase tracking-wider py-3 px-6 sm:px-8 rounded-full hover:bg-gray-50 transition flex items-center justify-center w-full sm:w-auto"
         >
           <svg className="w-3.5 h-3.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

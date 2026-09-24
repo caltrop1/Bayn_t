@@ -80,6 +80,19 @@ function StudentDashboard({ user, data, error, logout }) {
           )}
         </section>
 
+        <section className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="rounded-2xl bg-white p-6 shadow-sm">
+            <p className="text-[#a87b52] text-xs font-bold tracking-widest uppercase">ATTENDANCE</p>
+            <p className="mt-3 text-3xl font-serif text-[#111111]">{student?.attendance_summary?.attendance_percentage ?? 0}%</p>
+            <p className="mt-1 text-sm text-gray-500">{student?.attendance_summary?.present_or_late ?? 0} of {student?.attendance_summary?.total_days ?? 0} recorded days</p>
+          </div>
+          <div className="rounded-2xl bg-white p-6 shadow-sm">
+            <p className="text-[#a87b52] text-xs font-bold tracking-widest uppercase">COURSE PROGRESS</p>
+            <p className="mt-3 text-3xl font-serif text-[#111111]">{student?.course_progress?.total_weighted_score ?? 0}</p>
+            <p className="mt-1 text-sm text-gray-500">Weighted score across {student?.course_progress?.assessment_count ?? 0} assessments</p>
+          </div>
+        </section>
+
         {application && <section className="bg-white rounded-2xl p-6 shadow-sm mt-6"><h2 className="font-serif text-2xl mb-2">Application status</h2><p className="text-sm text-gray-500">{application.reference_number || 'Application'} · {application.status || 'Processing'}</p></section>}
         {completion?.status === 'approved' && !completionFinished && <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#e6f7d7] via-[#fff5c7] to-[#ffd9e8] p-8 shadow-sm mt-6 border border-white"><div className="absolute -right-8 -top-10 h-32 w-32 rounded-full bg-white/40" /><div className="absolute right-24 bottom-[-3rem] h-28 w-28 rounded-full bg-[#c8e8f4]/60" /><div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-6"><div><div className="text-3xl mb-3">🎉 ✨ 🎓</div><p className="text-xs font-bold tracking-[0.2em] text-[#7f5d23] uppercase">Congratulations!</p><h2 className="font-serif text-3xl text-[#213c2d] mt-2">You completed your course</h2><p className="text-sm text-[#49604d] mt-2">Your completion has been approved by the registrar. Your certificate will be prepared for physical signing and collection.</p></div><button onClick={finishCompletion} className="relative shrink-0 rounded-full bg-[#345243] px-7 py-3 text-sm font-semibold text-white shadow-md hover:bg-[#2b4a3b]">Finish</button></div></section>}
         {completion?.status === 'approved' && completionFinished && <section className="rounded-2xl border border-[#bbefc8] bg-[#effdf3] p-5 shadow-sm mt-6"><div className="flex items-center gap-4"><div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#12b76a] text-2xl text-white">✓</div><div><p className="text-xs font-bold tracking-widest text-[#027a48] uppercase">Course completed</p><h2 className="text-xl font-semibold text-[#14532d] mt-1">Passed</h2><p className="text-sm text-[#4b6350] mt-1">Your registrar-approved result is recorded. Please contact the academy about certificate collection.</p></div></div></section>}

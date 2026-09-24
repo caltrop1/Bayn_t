@@ -5,7 +5,7 @@ import { useApplication } from '../context/ApplicationContext';
 
 const ReviewStep = () => {
   const navigate = useNavigate();
-  const { formData, getSelectedProgram, completeStep } = useApplication();
+  const { formData, getSelectedProgram, completeStep, basePath } = useApplication();
   const [agreed, setAgreed] = useState(false);
   const program = getSelectedProgram();
 
@@ -193,7 +193,7 @@ const ReviewStep = () => {
         {/* Bottom navigation */}
         <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
           <button
-            onClick={() => navigate('/application/documents')}
+            onClick={() => navigate(`${basePath}/documents`)}
             className="border border-gray-400 bg-transparent text-[#111111] text-[12px] font-medium uppercase tracking-wider py-3 px-6 sm:px-8 rounded-full hover:bg-gray-50 transition flex items-center justify-center w-full sm:w-auto"
           >
             <svg className="w-3.5 h-3.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -203,7 +203,7 @@ const ReviewStep = () => {
           </button>
           <button
             disabled={!agreed}
-            onClick={() => { completeStep('review'); navigate('/application/payment'); }}
+            onClick={() => { completeStep('review'); navigate(`${basePath}/payment`); }}
             className={`text-[12px] font-medium uppercase tracking-wider py-3 px-6 sm:px-8 rounded-full transition flex items-center justify-center shadow-sm w-full sm:w-auto ${
               agreed
                 ? 'bg-[#e6ca64] hover:bg-[#d6b74e] text-[#111111] cursor-pointer'

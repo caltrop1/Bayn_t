@@ -58,7 +58,7 @@ class DocumentController extends Controller
     public function storeForApplication(StoreApplicationDocumentRequest $request, Application $application): JsonResponse
     {
         Gate::authorize('uploadDocument', $application);
-        abort_unless(in_array($application->status?->value, ['draft', 'rejected'], true), 409, 'Documents can only be uploaded to draft or rejected applications.');
+        abort_unless(in_array($application->status?->value, ['draft', 'rejected', 'needs_information'], true), 409, 'Documents can only be uploaded to draft, rejected, or information-requested applications.');
 
         $file = $request->file('file');
         $filePath = $file->storeAs(

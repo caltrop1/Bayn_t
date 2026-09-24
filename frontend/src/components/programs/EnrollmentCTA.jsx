@@ -9,7 +9,7 @@ const EnrollmentCTA = () => {
           Enrollment Now Open
         </h2>
         
-        <Link to="/application" className="bg-[#eec15b] hover:bg-[#d8ae52] text-[#1c1c1c] px-6 sm:px-8 py-3 sm:py-3.5 rounded-full text-[11px] sm:text-[12px] font-bold uppercase tracking-wider transition-colors shadow-sm inline-block whitespace-nowrap">
+        <Link to="/apply" className="bg-[#eec15b] hover:bg-[#d8ae52] text-[#1c1c1c] px-6 sm:px-8 py-3 sm:py-3.5 rounded-full text-[11px] sm:text-[12px] font-bold uppercase tracking-wider transition-colors shadow-sm inline-block whitespace-nowrap">
           Apply Now
         </Link>
       </div>

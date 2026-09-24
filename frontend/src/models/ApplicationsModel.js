@@ -3,7 +3,7 @@ import { registrarService } from '../services/applicationService';
 const DEFAULT_PER_PAGE = 7;
 
 const initials = (name = '') => name.split(' ').filter(Boolean).map((part) => part[0]).slice(0, 2).join('').toUpperCase();
-const statusLabel = (status) => ({ submitted: 'Needs Review', under_review: 'Needs Review', payment_pending: 'Awaiting Information', paid: 'Needs Review', approved: 'Approved', enrolled: 'Approved', rejected: 'Rejected' }[status] || status || 'Needs Review');
+const statusLabel = (status) => ({ submitted: 'Needs Review', under_review: 'Needs Review', payment_pending: 'Awaiting Information', needs_information: 'Awaiting Information', paid: 'Needs Review', approved: 'Approved', enrolled: 'Approved', rejected: 'Rejected' }[status] || status || 'Needs Review');
 const statusStyle = (status) => ({ 'Needs Review': ['bg-[#fef3c7] text-[#b45309]', 'bg-[#f59e0b]'], 'Awaiting Information': ['bg-[#e0f2fe] text-[#0369a1]', 'bg-[#0ea5e9]'], Approved: ['bg-[#dcfce7] text-[#15803d]', 'bg-[#22c55e]'], Rejected: ['bg-[#fee2e2] text-[#b91c1c]', 'bg-[#ef4444]'] }[statusLabel(status)] || ['bg-gray-100 text-gray-700', 'bg-gray-400']);
 
 const toTableRow = (app) => ({
@@ -13,6 +13,7 @@ const toTableRow = (app) => ({
   program: app.program?.name || 'Unassigned',
   submitted: app.submitted_at ? new Date(app.submitted_at).toLocaleDateString() : 'Draft',
   status: statusLabel(app.status),
+  backendStatus: app.status,
   statusColor: statusStyle(app.status)[0],
   statusIconColor: statusStyle(app.status)[1],
   payment: app.payments?.[0]?.status || 'Pending',

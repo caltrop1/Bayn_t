@@ -10,7 +10,7 @@ const paymentMethods = [
 
 const PaymentStep = () => {
   const navigate = useNavigate();
-  const { formData, updateField, getSelectedProgram, completeStep, saveStep, submitApplication } = useApplication();
+  const { formData, updateField, getSelectedProgram, completeStep, saveStep, submitApplication, basePath } = useApplication();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const program = getSelectedProgram();
@@ -82,7 +82,7 @@ const PaymentStep = () => {
                   const draft = await saveStep('payment');
                   await submitApplication(draft);
                   completeStep('payment');
-                  navigate('/application/confirmation');
+                  navigate(`${basePath}/confirmation`);
                 } catch (err) { setError(err.message || 'Your application could not be submitted. Please try again.'); }
                 finally { setBusy(false); }
               }}
@@ -92,7 +92,7 @@ const PaymentStep = () => {
               {busy ? 'Submitting…' : 'Submit Application'}
             </button>
             <button
-              onClick={() => navigate('/application/review')}
+              onClick={() => navigate(`${basePath}/review`)}
               className="border border-gray-300 bg-transparent text-[#111111] text-[12px] font-medium uppercase tracking-wider py-4 px-6 sm:px-8 rounded-full hover:bg-gray-50 transition w-full sm:w-auto"
             >
               Back

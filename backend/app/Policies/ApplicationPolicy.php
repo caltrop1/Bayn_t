@@ -36,6 +36,11 @@ class ApplicationPolicy
         return $user->isSuperAdmin() || $user->isRegistrar();
     }
 
+    public function createAccount(User $user, Application $application): bool
+    {
+        return ($user->isSuperAdmin() || $user->isRegistrar()) && $user->is_active;
+    }
+
     public function uploadDocument(User $user, Application $application): bool
     {
         if ($user->isSuperAdmin() || $user->isRegistrar()) {
@@ -47,12 +52,12 @@ class ApplicationPolicy
 
     public function update(User $user, Application $application): bool
     {
-        return in_array($application->status?->value, ['draft', 'rejected'], true) && $this->view($user, $application);
+        return in_array($application->status?->value, ['draft', 'rejected', 'needs_information'], true) && $this->view($user, $application);
     }
 
     public function submit(User $user, Application $application): bool
     {
-        return in_array($application->status?->value, ['draft', 'rejected'], true) && $this->view($user, $application);
+        return in_array($application->status?->value, ['draft', 'rejected', 'needs_information'], true) && $this->view($user, $application);
     }
 
     public function viewDocument(User $user, Application $application): bool

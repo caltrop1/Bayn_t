@@ -41,7 +41,7 @@ export default class ApplicationModel {
   static async fetch(id) {
     const app = await registrarService.application(id);
     if (!app) return null;
-    const label = ({ submitted: 'Needs Review', under_review: 'Needs Review', payment_pending: 'Awaiting Information', paid: 'Needs Review', approved: 'Approved', enrolled: 'Approved', rejected: 'Rejected' }[app.status] || app.status || 'Needs Review');
+    const label = ({ submitted: 'Needs Review', under_review: 'Needs Review', payment_pending: 'Awaiting Information', needs_information: 'Awaiting Information', paid: 'Needs Review', approved: 'Approved', enrolled: 'Approved', rejected: 'Rejected' }[app.status] || app.status || 'Needs Review');
     const style = applicantStatusStyles[label] || applicantStatusStyles['Needs Review'];
     return new ApplicationModel({
       ...style,

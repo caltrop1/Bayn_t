@@ -14,7 +14,7 @@ class NotifyApplicationReviewed
     public function handle(ApplicationReviewed $event): void
     {
         $status = $event->status instanceof ApplicationStatus ? $event->status : ApplicationStatus::from($event->status);
-        if (! in_array($status, [ApplicationStatus::Approved, ApplicationStatus::Rejected], true)) {
+        if (! in_array($status, [ApplicationStatus::Approved, ApplicationStatus::Rejected, ApplicationStatus::NeedsInformation], true)) {
             return;
         }
 

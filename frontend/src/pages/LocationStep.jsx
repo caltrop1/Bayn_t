@@ -6,14 +6,14 @@ import { useApplication } from '../context/ApplicationContext';
 
 const LocationStep = () => {
   const navigate = useNavigate();
-  const { formData, errors, updateField, validateStep, completeStep, saveStep } = useApplication();
+  const { formData, errors, updateField, validateStep, completeStep, saveStep, basePath, guest } = useApplication();
   const [busy, setBusy] = React.useState(false);
   const [apiError, setApiError] = React.useState('');
 
   const handleContinue = async () => {
     if (validateStep('location')) {
       setBusy(true); setApiError('');
-      try { await saveStep('location'); completeStep('location'); navigate('/application/experience'); }
+      try { await saveStep('location'); completeStep('location'); navigate(`${basePath}/experience`); }
       catch (error) { setApiError(error.message || 'Your information could not be saved. Please try again.'); }
       finally { setBusy(false); }
     }
@@ -40,6 +40,17 @@ const LocationStep = () => {
           </p>
 
           <form className="space-y-8 flex-1" onSubmit={(e) => { e.preventDefault(); handleContinue(); }}>
+            {guest && <>
+              <div>
+                <label className="block text-[11px] font-bold text-[#111111] tracking-wider mb-2">FULL NAME</label>
+                <input type="text" required value={formData.applicantName} onChange={(e) => updateField('applicantName', e.target.value)} placeholder="Your full name" className="w-full border border-gray-300 rounded-lg px-4 py-3 text-[14px] text-gray-800 placeholder-gray-400 focus:outline-none focus:border-gray-400 transition-colors" />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-[#111111] tracking-wider mb-2">EMAIL ADDRESS</label>
+                <input type="email" required value={formData.applicantEmail} onChange={(e) => updateField('applicantEmail', e.target.value)} placeholder="you@example.com" className="w-full border border-gray-300 rounded-lg px-4 py-3 text-[14px] text-gray-800 placeholder-gray-400 focus:outline-none focus:border-gray-400 transition-colors" />
+                <p className="text-[11px] text-gray-500 mt-2">This email becomes your academy login email if you are enrolled.</p>
+              </div>
+            </>}
             <div>
               <label className="block text-[11px] font-bold text-[#111111] tracking-wider mb-2">PHONE NUMBER</label>
               <input type="tel" required value={formData.applicantPhone} onChange={(e) => updateField('applicantPhone', e.target.value)} placeholder="Example: +251900000000" className="w-full border border-gray-300 rounded-sm px-4 py-3 text-[14px] text-gray-800 placeholder-gray-400 focus:outline-none focus:border-gray-400 transition-colors" />
@@ -104,14 +115,14 @@ const LocationStep = () => {
             </p>
             
             <div className="flex flex-col gap-2 items-end w-full">
-              {(errors.applicantPhone || errors.city || errors.area) && (
+              {(errors.applicantName || errors.applicantEmail || errors.applicantPhone || errors.city || errors.area) && (
                 <p className="text-[12px] text-red-500">
-                  {errors.applicantPhone || errors.city || errors.area}
+                  {errors.applicantName || errors.applicantEmail || errors.applicantPhone || errors.city || errors.area}
                 </p>
               )}
               <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center w-full">
                 <button 
-                  onClick={() => navigate('/application/selected')}
+                  onClick={() => navigate(`${basePath}/selected`)}
                   className="border border-gray-400 bg-transparent text-[#111111] text-[12px] font-medium uppercase tracking-wider py-3 px-6 sm:px-8 rounded-full hover:bg-gray-50 transition flex items-center justify-center w-full sm:w-auto"
                 >
                   <svg className="w-3.5 h-3.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
